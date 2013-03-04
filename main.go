@@ -118,12 +118,15 @@ func main() {
 	palette := GenerateColorPalette(255)
 	size := 8096.0
 	img := image.NewPaletted(image.Rect(0, 0, int(size), int(size*0.4459)), palette)
-	mandelbrot := fractal.Mandelbrot{
-		Start:         fractal.Pt_f64{0.276185, 0.479000198},
-		End:           fractal.Pt_f64{0.367588933, 0.519762846},
+
+	fractal_generator := fractal.Generator{
+		Domain:        fractal.Rect64(0.276185, 0.479000198,
+		                              0.367588933, 0.519762846),
+		Size:          fractal.Rect8(img.Bounds().Min.X, img.Bounds().Min.Y,
+		                             img.Bounds().Max.X, img.Bounds().Max.Y),
 		Bailout:       2.0,
 		MaxIterations: len(palette),
-		ImageSize:     img.Bounds(),
+		Function:      fractal.Mandelbrot,
 	}
 
 	// for each CPU create a channel and a strip of the image to render
@@ -132,7 +135,7 @@ func main() {
 
 	for i := range channels {
 		channels[i] = make(chan bool, 512)
-		go fractal.Render(sub_images[i].(*image.Paletted), mandelbrot, channels[i])
+		go fractal.Render(sub_images[i].(*image.Paletted), fractal_generator, channels[i])
 	}
 
 	//measure the goroutines progress and wait for them to finish
