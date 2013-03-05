@@ -1,10 +1,6 @@
 package fractal
 
-import(
-	"image"
-)
-
-type Point8 struct{
+type Point8 struct {
 	X, Y int
 }
 
@@ -28,10 +24,9 @@ func Rect64(x0, y0, x1, y1 float64) Rectangle64 {
 	return Rectangle64{Point64{x0, y0}, Point64{x1, y1}}
 }
 
-
 // Render the fractal to an Paletted, usually a sub-image
 // call as a goroutine
-func Render(img *image.Paletted, generator Generator, channel chan bool) {
+func Render(img *Paletted_uint32, generator Generator, channel chan bool) {
 	for x := img.Rect.Min.X; x < img.Rect.Max.X; x++ {
 		for y := img.Rect.Min.Y; y < img.Rect.Max.Y; y++ {
 			img.SetColorIndex(x, y, generator.At(x, y))

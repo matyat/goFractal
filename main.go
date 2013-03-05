@@ -56,22 +56,22 @@ func ConvertPaletteToRGBA(img *image.Paletted) *image.RGBA {
 	output := image.NewRGBA(img.Bounds())
 	for x := img.Rect.Min.X; x < img.Rect.Max.X; x++ {
 		for y := img.Rect.Min.Y; y < img.Rect.Max.Y; y++ {
-			fmt.Println(img.ColorIndexAt(x,y), "->", img.At(x,y))
-			output.Set(x, y, img.At(x,y))
+			fmt.Println(img.ColorIndexAt(x, y), "->", img.At(x, y))
+			output.Set(x, y, img.At(x, y))
 		}
 	}
-		
+
 	return output
 }
 
 // Generates a colour palette 
 func GenerateColorPalette(levels uint32) color.Palette {
 	palette := make([]color.Color, levels)
-	for i := uint32(0); i < levels - 1; i++ {
+	for i := uint32(0); i < levels-1; i++ {
 		n := float64(i) / float64(levels)
 		palette[i] = HSVToRGB(360*n, 0.8, 1.0)
 	}
-	palette[levels-1] = color.RGBA{0,0,0,255}
+	palette[levels-1] = color.RGBA{0, 0, 0, 255}
 	return palette
 }
 
@@ -138,7 +138,7 @@ func main() {
 		Size: fractal.Rect8(img.Bounds().Min.X, img.Bounds().Min.Y,
 			img.Bounds().Max.X, img.Bounds().Max.Y),
 		Bailout:       3.0,
-		MaxIterations: uint32( len(palette) - 1 ),
+		MaxIterations: uint32(len(palette) - 1),
 		Function:      fractal.Mandelbrot,
 	}
 
