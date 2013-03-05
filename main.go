@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"goFractal/fractal"
 	"image"
 	"image/color"
 	"image/png"
@@ -9,7 +10,6 @@ import (
 	"runtime"
 	"strconv"
 	"time"
-	"goFractal/fractal"
 )
 
 // convert from HSV to RGB color space
@@ -52,18 +52,31 @@ func HSVToRGB(h, s, v float64) color.RGBA {
 	return color.RGBA{uint8(255 * r), uint8(255 * g), uint8(255 * b), 255}
 }
 
+func ConvertPaletteToRGBA(img *image.Paletted) *image.RGBA {
+	output := image.NewRGBA(img.Bounds())
+	for x := img.Rect.Min.X; x < img.Rect.Max.X; x++ {
+		for y := img.Rect.Min.Y; y < img.Rect.Max.Y; y++ {
+			fmt.Println(img.ColorIndexAt(x,y), "->", img.At(x,y))
+			output.Set(x, y, img.At(x,y))
+		}
+	}
+		
+	return output
+}
+
 // Generates a colour palette 
-func GenerateColorPalette(levels int) color.Palette {
+func GenerateColorPalette(levels uint32) color.Palette {
 	palette := make([]color.Color, levels)
-	for i := 0; i < levels; i++ {
+	for i := uint32(0); i < levels - 1; i++ {
 		n := float64(i) / float64(levels)
 		palette[i] = HSVToRGB(360*n, 0.8, 1.0)
 	}
+	palette[levels-1] = color.RGBA{0,0,0,255}
 	return palette
 }
 
 // Split an image into a number of virtal strips
-func SplitImage(img *image.Paletted, n int) []image.Image {
+func SplitImage(img *fractal.Paletted_uint32, n int) []image.Image {
 	strips := make([]image.Image, n)
 	bounds := img.Bounds()
 	h_step := int(float64(bounds.Dx()) / float64(n))
@@ -115,17 +128,17 @@ func main() {
 		threads = 2 * cpus
 	}
 
-	palette := GenerateColorPalette(255)
-	size := 8096.0
-	img := image.NewPaletted(image.Rect(0, 0, int(size), int(size*0.4459)), palette)
+	palette := GenerateColorPalette(1000)
+	size := 1024.0
+	img := fractal.NewPaletted_uint32(image.Rect(0, 0, int(size), int(size*0.4459)), palette)
 
 	fractal_generator := fractal.Generator{
-		Domain:        fractal.Rect64(0.276185, 0.479000198,
-		                              0.367588933, 0.519762846),
-		Size:          fractal.Rect8(img.Bounds().Min.X, img.Bounds().Min.Y,
-		                             img.Bounds().Max.X, img.Bounds().Max.Y),
-		Bailout:       2.0,
-		MaxIterations: len(palette),
+		Domain: fractal.Rect64(0.276185, 0.479000198,
+			0.367588933, 0.519762846),
+		Size: fractal.Rect8(img.Bounds().Min.X, img.Bounds().Min.Y,
+			img.Bounds().Max.X, img.Bounds().Max.Y),
+		Bailout:       3.0,
+		MaxIterations: uint32( len(palette) - 1 ),
 		Function:      fractal.Mandelbrot,
 	}
 
@@ -135,7 +148,7 @@ func main() {
 
 	for i := range channels {
 		channels[i] = make(chan bool, 512)
-		go fractal.Render(sub_images[i].(*image.Paletted), fractal_generator, channels[i])
+		go fractal.Render(sub_images[i].(*fractal.Paletted_uint32), fractal_generator, channels[i])
 	}
 
 	//measure the goroutines progress and wait for them to finish
@@ -156,12 +169,6 @@ func main() {
 	}
 
 	fmt.Print("\rFinished rendering in ", time.Since(t), " on ", cpus, " CPUs with ", threads, " threads\n")
-
-	// a paletted png can only use up to 255 colors
-	// so it'll need converting
-	if len(palette) > 255 {
-		//TODO: convert a palatted image to an RGBA image or something
-	}
 
 	imgFile, _ := os.Create("image.png")
 	png.Encode(imgFile, img)
