@@ -54,10 +54,11 @@ func HSVToRGB(h, s, v float64) color.RGBA {
 // Generates a colour palette 
 func GenerateColorPalette(levels uint32) color.Palette {
 	palette := make([]color.Color, levels)
-	for i := uint32(0); i < levels; i++ {
-		n := float64(i) / float64(levels)
+	for i := uint32(1); i < levels; i++ {
+		n := float64(i) / float64(levels - 1)
 		palette[i] = HSVToRGB(300*n, 0.8, 1.0)
 	}
+	palette[0] = color.RGBA{0, 0, 0, 255}
 	return palette
 }
 
@@ -76,28 +77,22 @@ func main() {
 		// threads finish early
 
 		// TODO: work out the optimal number of threads per CPU
-		threads = 2 * cpus
+		threads = 4 * cpus
 	}
 
-	palette := GenerateColorPalette(255)
+	palette := GenerateColorPalette(4)
 	size := 1024
 
 	viewport := fractal.Viewport{
 		Location: complex(-0.5, 0),
-		Scale:    2 / float64(size),
+		Scale:    3 / float64(size),
 		Rotation: 0,
 		Width:    size,
 		Height:   size,
 	}
 
-	fractal_generator := fractal.Generator{
-		Bailout:       2.0,
-		MaxIterations: uint32(len(palette) - 1),
-		Function:      fractal.Mandelbrot,
-	}
-
 	monitor := fractal.NewMonitor()
-	img := fractal.Render(viewport, fractal_generator, palette, monitor, 1, threads)
+	img := fractal.Render(viewport, fractal.Mandelbrot(1024), palette, monitor, threads)
 	// loop until the monitor says the render is complete
 	t := time.Now()
 	var last_prog_str string

@@ -50,7 +50,7 @@ func NewMonitor() *Monitor {
 }
 
 func Render(view Viewport, gen Generator, palette color.Palette,
-	monitor *Monitor, multisampling, threads int) *Paletted_uint32 {
+	monitor *Monitor, threads int) *Paletted_uint32 {
 
 	output_img := NewPaletted_uint32(
 		image.Rect(0, 0, view.Width, view.Height), palette)
@@ -60,13 +60,25 @@ func Render(view Viewport, gen Generator, palette color.Palette,
 	sub_images := splitImage(output_img, threads)
 
 	for i := range monitor.Channels {
-		monitor.Channels[i] = make(chan bool, 512)
+		monitor.Channels[i] = make(chan bool, 1024)
 
 		go func(img *Paletted_uint32, view Viewport,
 			gen Generator, channel chan bool) {
 			for x := img.Rect.Min.X; x < img.Rect.Max.X; x++ {
 				for y := img.Rect.Min.Y; y < img.Rect.Max.Y; y++ {
-					img.SetColorIndex(x, y, gen.EscapeAt(view.ComplexAt(x, y)))
+					itr := gen.EscapeAt(view.ComplexAt(x, y))
+					var colour_idx int
+					
+					cols := len(palette) - 1
+					if itr == gen.MaxIterations {
+						colour_idx = 0
+					} else {
+						colour_idx = 1 + (itr % ((2*cols)-1))
+						if colour_idx > cols {
+							colour_idx = 2*cols - colour_idx
+						}
+					}
+					img.SetColorIndex(x, y, uint32(colour_idx))
 					channel <- true
 				}
 			}
@@ -76,3 +88,5 @@ func Render(view Viewport, gen Generator, palette color.Palette,
 
 	return output_img
 }
+
+//func Downsample( Paletted_uint32 ) *image.RGBA {}

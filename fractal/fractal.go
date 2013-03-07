@@ -24,11 +24,3 @@ func Rect64(x0, y0, x1, y1 float64) Rectangle64 {
 	return Rectangle64{Point64{x0, y0}, Point64{x1, y1}}
 }
 
-func Mandelbrot(c complex128) func() complex128 {
-	C := c
-	Z := complex(0, 0)
-	return func() complex128 {
-		Z = Z*Z + C
-		return Z
-	}
-}

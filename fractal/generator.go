@@ -6,15 +6,15 @@ import (
 
 type Generator struct {
 	Bailout       float64
-	MaxIterations uint32
+	MaxIterations int
 	Function      func(complex128) func() complex128
 }
 
 // Gets the number of iterations until escape for a complex value Z
-func (gen Generator) EscapeAt(Z complex128) uint32 {
+func (gen Generator) EscapeAt(Z complex128) int {
 	function_instance := gen.Function(Z)
 	var C complex128
-	var itr uint32
+	var itr int
 	for ; cmplx.Abs(C) < gen.Bailout && itr < gen.MaxIterations; itr++ {
 		C = function_instance()
 	}
