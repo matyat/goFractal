@@ -23,4 +23,3 @@ type Rectangle64 struct {
 func Rect64(x0, y0, x1, y1 float64) Rectangle64 {
 	return Rectangle64{Point64{x0, y0}, Point64{x1, y1}}
 }
-

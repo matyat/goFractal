@@ -1,22 +1,31 @@
 package fractal
 
 import (
+	"math"
 	"math/cmplx"
 )
 
 type Generator struct {
-	Bailout       float64
-	MaxIterations int
-	Function      func(complex128) func() complex128
+	Bailout                float64
+	MaxIterations          int
+	Function               func(complex128) func() complex128
+	IterationNormalisation func(int, complex128) float64
 }
 
 // Gets the number of iterations until escape for a complex value Z
-func (gen Generator) EscapeAt(Z complex128) int {
-	function_instance := gen.Function(Z)
-	var C complex128
+func (gen Generator) EscapeAt(C complex128) float64 {
+	function_instance := gen.Function(C)
+	var Z complex128
 	var itr int
-	for ; cmplx.Abs(C) < gen.Bailout && itr < gen.MaxIterations; itr++ {
-		C = function_instance()
+
+	// loop until the Z becomes unbounded
+	// if the number of iteratation hits the MaxIterations var
+	// we assume Z is bounded and return +infinity
+	for ; cmplx.Abs(Z) < gen.Bailout; itr++ {
+		if itr == gen.MaxIterations {
+			return math.Inf(1)
+		}
+		Z = function_instance()
 	}
-	return itr
+	return gen.IterationNormalisation(itr, Z)
 }
