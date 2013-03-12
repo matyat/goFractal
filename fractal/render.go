@@ -49,9 +49,10 @@ func NewMonitor() *Monitor {
 	return new(Monitor)
 }
 
-func Render(view Viewport, gen Generator, palette *Palette,
+func Render(view Viewport, gen Generator, color_wheel *ColorWheel,
 	monitor *Monitor, multisample, threads int) *image.RGBA {
-	palette.generate()
+	
+	color_wheel.generate()
 
 	output_img := image.NewRGBA(
 		image.Rect(0, 0, view.Width, view.Height))
@@ -72,9 +73,9 @@ func Render(view Viewport, gen Generator, palette *Palette,
 					for sx := 0; sx < multisample; sx++ {
 						for sy := 0; sy < multisample; sy++ {
 							x0 := float64(x)+float64(sx) / m
-							y0 := float64(x)+float64(sy) / m
+							y0 := float64(y)+float64(sy) / m
 							itr := gen.EscapeAt(view.ComplexAt(x0, y0))
-							r, g, b, _ := palette.ColorAt(itr).RGBA()
+							r, g, b, _ := color_wheel.ColorAt(itr).RGBA()
 							R += uint(uint8(r))
 							G += uint(uint8(g))
 							B += uint(uint8(b))

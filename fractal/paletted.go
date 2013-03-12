@@ -1,195 +1,106 @@
 package fractal
 
 import (
-	"image"
 	"image/color"
 	"math"
 )
-// convert from HSV to RGB color space
-func HSVToRGB(h, s, v float64) color.RGBA {
-	hh := h / 60
-	i := int(hh)
-	ff := hh - float64(i)
 
-	p := v * (1 - s)
-	q := v * (1 - s*ff)
-	t := v * (1 - s*(1-ff))
-
-	var r, g, b float64
-	switch i {
-	case 0:
-		r = v
-		g = t
-		b = p
-	case 1:
-		r = q
-		g = v
-		b = p
-	case 2:
-		r = p
-		g = v
-		b = t
-	case 3:
-		r = p
-		g = q
-		b = v
-	case 4:
-		r = t
-		g = p
-		b = v
-	case 5:
-		r = v
-		g = p
-		b = q
-	}
-	return color.RGBA{uint8(255 * r), uint8(255 * g), uint8(255 * b), 255}
+// internal type for ColorWheel to interpolate with, holds a colour and the it's angle
+// in the wheel
+type interpolColor struct {
+	color color.Color
+	angle float64
 }
 
-// Paletted_float64 is an in-memory image of float64 indices into a given palette.
-type Paletted_float64 struct {
-	// Pix holds the image's pixels, as palette indices. The pixel at
-	// (x, y) starts at Pix[(y-Rect.Min.Y)*Stride + (x-Rect.Min.X)*1].
-	Pix []float64
-	// Stride is the Pix stride (in bytes) between vertically adjacent pixels.
-	Stride int
-	// Rect is the image's bounds.
-	Rect image.Rectangle
-	// Palette is the image's palette.
-	Palette *Palette
+// Special Palette for fractals, which loops back on it self
+// Set the InfColor to the color you want bounded regions (infinte
+// iterations) to be
+type ColorWheel struct {
+	cPalette       color.Palette
+	InfColor       color.Color
+	interpolColors []interpolColor
+	Radius         float64
 }
 
-func (p *Paletted_float64) ColorModel() color.Model {
-	// this should allow us to create a Truecolor 8/16 bit png when
-	// using a large palatte
-
-	if len(p.Palette.cPalette) > 255 {
-		// will cause the encoder to use Truecolor 8 bit
-		return color.RGBAModel
+// Greates a new ColorWheel with the given radius, palette size and colour for
+// infinty
+func NewColorWheel(radius float64, palette_size int, inf_color color.Color) *ColorWheel {
+	return &ColorWheel{
+		cPalette: make([]color.Color, palette_size),
+		InfColor: inf_color,
+		Radius:   radius,
 	}
-
-	if len(p.Palette.cPalette) > 16777215 {
-		// will cause the encoder to use Truecolor 16 bit
-		return color.RGBA64Model
-	}
-	// FIXME: should return palette
-	return color.RGBAModel
 }
 
-func (p *Paletted_float64) Bounds() image.Rectangle { return p.Rect }
-
-func (p *Paletted_float64) At(x, y int) color.Color {
-	if len(p.Palette.cPalette) == 0 {
-		return nil
-	}
-	if !(image.Point{x, y}.In(p.Rect)) {
-		return p.Palette.cPalette[0]
-	}
-	i := p.PixOffset(x, y)
-	return p.Palette.ColorAt(p.Pix[i])
+// add a colour to the ColorWheel
+func (col_wheel *ColorWheel) AddColor(col color.Color, angle float64) {
+	col_wheel.interpolColors = append(col_wheel.interpolColors, interpolColor{col, angle})
 }
 
-// PixOffset returns the index of the first element of Pix that corresponds to
-// the pixel at (x, y).
-func (p *Paletted_float64) PixOffset(x, y int) int {
-	return (y-p.Rect.Min.Y)*p.Stride + (x-p.Rect.Min.X)*1
+// internal method of getting the pos of the internal palette at a given angle
+func (col_wheel *ColorWheel) getPalettePosAt(angle float64) float64 {
+	// wrap around 2pi
+	_, f := math.Modf(angle / (2 * math.Pi))
+	s := f * 2 * math.Pi
+	p := 2 * math.Pi / float64(len(col_wheel.cPalette))
+	return s / p
 }
 
-//func (p *Paletted_float64) Set(x, y int, c color.Color) {
-//	if !(image.Point{x, y}.In(p.Rect)) {
-//		return
-//	}
-//	i := p.PixOffset(x, y)
-//	p.Pix[i] = float64(p.Palette.Index(c))
-//}
-
-func (p *Paletted_float64) ColorIndexAt(x, y int) float64 {
-	if !(image.Point{x, y}.In(p.Rect)) {
-		return 0
-	}
-	i := p.PixOffset(x, y)
-	return p.Pix[i]
-}
-
-func (p *Paletted_float64) SetColorIndex(x, y int, index float64) {
-	if !(image.Point{x, y}.In(p.Rect)) {
-		return
-	}
-	i := p.PixOffset(x, y)
-	p.Pix[i] = index
-}
-
-// SubImage returns an image representing the portion of the image p visible
-// through r. The returned value shares pixels with the original image.
-func (p *Paletted_float64) SubImage(r image.Rectangle) image.Image {
-	r = r.Intersect(p.Rect)
-	// If r1 and r2 are image.Rectangles, r1.Intersect(r2) is not guaranteed to be inside
-	// either r1 or r2 if the intersection is empty. Without explicitly checking for
-	// this, the Pix[i:] expression below can panic.
-	if r.Empty() {
-		return &Paletted_float64{
-			Palette: p.Palette,
+func (col_wheel *ColorWheel) generate() {
+	const M = float64(1<<16 - 1)
+	//for each colour to interpolate between
+	for i := range col_wheel.interpolColors {
+		col_A := col_wheel.interpolColors[i]
+		var col_B interpolColor
+		if i != len(col_wheel.interpolColors)-1 {
+			col_B = col_wheel.interpolColors[i+1]
+		} else {
+			// if this is the last colour, we want
+			// to interpolate between this and the 
+			// first colour
+			col_B = col_wheel.interpolColors[0]
+			col_B.angle += 2 * math.Pi
 		}
-	}
-	i := p.PixOffset(r.Min.X, r.Min.Y)
-	return &Paletted_float64{
-		Pix:     p.Pix[i:],
-		Stride:  p.Stride,
-		Rect:    p.Rect.Intersect(r),
-		Palette: p.Palette,
-	}
-}
 
-// Opaque scans the entire image and returns whether or not it is fully opaque.
-func (p *Paletted_float64) Opaque() bool {
-	if p.Rect.Empty() {
-		return true
-	}
+		start_idx := int(math.Ceil(col_wheel.getPalettePosAt(col_A.angle)))
+		end_idx := int(math.Ceil(col_wheel.getPalettePosAt(col_B.angle)))
 
-	for _, c := range p.Palette.cPalette {
-		_, _, _, a := c.RGBA()
-		if a != 0xffff {
-			return false
+		Ar, Ag, Ab, Aa := col_A.color.RGBA()
+		Br, Bg, Bb, Ba := col_B.color.RGBA()
+		
+		// begin interpolation
+		for n := start_idx; n != end_idx; n++ {
+			cur_angle := 2 * math.Pi * float64(n) / float64(len(col_wheel.cPalette))
+			m := (cur_angle - col_A.angle) / (col_B.angle - col_A.angle)
+			blend := func(a, b uint32) uint8 {
+				fa := float64(a) * (1 - m)
+				fb := float64(b) * m
+				return uint8(255 * (fa + fb) / M)
+			}
+
+			col_wheel.cPalette[n] = color.RGBA{blend(Ar, Br), blend(Ag, Bg), blend(Ab, Bb), blend(Aa, Ba)}
+
+			if n == len(col_wheel.cPalette)-1 {
+				n = -1
+			}
 		}
-	}
-	return true
-}
 
-// NewPaletted_float64 returns a new Paletted with the given width, height and palette.
-func NewPaletted_float64(r image.Rectangle, p *Palette) *Paletted_float64 {
-	w, h := r.Dx(), r.Dy()
-	pix := make([]float64, 1*w*h)
-	return &Paletted_float64{pix, 1 * w, r, p}
-}
-
-// Special Palette for fractals which can support normailised iteration
-type Palette struct {
-	cPalette            color.Palette
-	InfColor            color.Color
-	Length, SmoothScale int
-}
-
-func NewPalette(size, smooth_scale int) *Palette {
-	return &Palette{
-		Length:      size,
-		SmoothScale: smooth_scale,
 	}
 }
 
-func (palette *Palette) generate() {
-	palette_len := palette.Length*palette.SmoothScale
-	palette.cPalette = make([]color.Color, palette_len)
-	for i := range palette.cPalette {
-		n := float64(i) / float64(palette_len)
-		palette.cPalette[i] = HSVToRGB(60 + 120*n, n, 1-n)
-	}
-}
-
-func (palette *Palette) ColorAt(itr float64) color.Color {
+func (col_wheel *ColorWheel) ColorAt(itr float64) color.Color {
+	// return the colour for infinity if infinity is given
 	if math.IsNaN(itr) || math.IsInf(itr, 0) {
-		return palette.InfColor
+		return col_wheel.InfColor
 	}
 
-	_, f:= math.Modf(itr/float64(2*palette.Length))
-	idx := int(math.Abs(1-2*f)*float64(palette.Length*palette.SmoothScale))
-	return palette.cPalette[idx]
+	angle := itr / col_wheel.Radius
+	_, f := math.Modf(angle / (2 * math.Pi))
+	angle = f * 2 * math.Pi
+
+	idx := int(math.Floor(col_wheel.getPalettePosAt(angle) + 0.5))
+	if idx == len(col_wheel.cPalette) {
+		idx = 0
+	}
+	return col_wheel.cPalette[idx]
 }
