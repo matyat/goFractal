@@ -10,25 +10,6 @@ import(
 //Mandelbrot Set
 func Mandelbrot(max_iterations int) Generator {
 	return Generator{
-		Bailout:       2,
-		MaxIterations: max_iterations,
-		Function: func(c complex128) func() complex128 {
-			C := c
-			Z := complex(0, 0)
-			return func() complex128 {
-				Z = Z*Z + C
-				return Z
-			}
-		},
-		IterationNormalisation: func(n int, z complex128) float64{
-			return float64(n)
-		},
-	}
-}
-
-//Mandelbrot Set
-func MandelbrotSmooth(max_iterations int) Generator {
-	return Generator{
 		Bailout:       4,
 		MaxIterations: max_iterations,
 		Function: func(c complex128) func() complex128 {
