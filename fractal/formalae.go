@@ -12,16 +12,16 @@ func Mandelbrot(max_iterations int) Generator {
 	return Generator{
 		Bailout:       4,
 		MaxIterations: max_iterations,
-		Function: func(c complex128) func() complex128 {
+		Function: func(c complex128) func() (complex128, float64) {
 			C := c
 			Z := complex(0, 0)
-			return func() complex128 {
+			return func() (complex128, float64) {
 				Z = Z*Z + C
-				return Z
+				return Z, 1.0
 			}
 		},
-		IterationNormalisation: func(n int, z complex128) float64{
-			return float64(n+1) - (math.Log(math.Log(cmplx.Abs(z)))/math.Log(2))
+		IterationNormalisation: func(n float64, z complex128) float64{
+			return n + 1 - (math.Log(math.Log(cmplx.Abs(z)))/math.Log(2))
 		},
 	}
 }
@@ -31,16 +31,17 @@ func Julia(c complex128, max_iterations int) Generator {
 	return Generator{
 		Bailout:       2,
 		MaxIterations: max_iterations,
-		Function: func(z complex128) func() complex128 {
+		Function: func(z complex128) func() (complex128, float64) {
 			Z := z
 			C := c
-			return func() complex128 {
+			return func() (complex128, float64) {
+				P := Z
 				Z = Z*Z + C
-				return Z
+				return Z, math.Exp(-cmplx.Abs(P))
 			}
 		},
-		IterationNormalisation: func(n int, z complex128) float64{
-			return float64(n)
+		IterationNormalisation: func(n float64, z complex128) float64{
+			return n + math.Exp(-cmplx.Abs(z))
 		},
 
 	}
@@ -51,15 +52,15 @@ func Newton(P, Pd func(complex128) complex128, max_iterations int) Generator {
 	return Generator{
 		Bailout:       1e14,
 		MaxIterations: max_iterations,
-		Function: func(z complex128) func() complex128 {
+		Function: func(z complex128) func() (complex128, float64) {
 			Z := z
-			return func() complex128 {
+			return func() (complex128, float64) {
 				Z = Z - P(Z)/Pd(Z)
-				return 1 / P(Z)
+				return 1 / P(Z), 1
 			}
 		},
-		IterationNormalisation: func(n int, z complex128) float64{
-			return float64(n)
+		IterationNormalisation: func(n float64, z complex128) float64{
+			return n
 		},
 	}
 }

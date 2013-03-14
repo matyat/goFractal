@@ -8,14 +8,15 @@ import (
 type Generator struct {
 	Bailout                float64
 	MaxIterations          int
-	Function               func(complex128) func() complex128
-	IterationNormalisation func(int, complex128) float64
+	Function               func(complex128) func() (complex128, float64)
+	IterationNormalisation func(float64, complex128) float64
 }
 
 // Gets the number of iterations until escape for a complex value Z
 func (gen Generator) EscapeAt(C complex128) float64 {
 	function_instance := gen.Function(C)
 	var Z complex128
+	var col float64
 	var itr int
 
 	// loop until the Z becomes unbounded
@@ -25,7 +26,9 @@ func (gen Generator) EscapeAt(C complex128) float64 {
 		if itr == gen.MaxIterations {
 			return math.Inf(1)
 		}
-		Z = function_instance()
+		var c float64
+		Z , c = function_instance()
+		col += c
 	}
-	return gen.IterationNormalisation(itr, Z)
+	return gen.IterationNormalisation(col, Z)
 }
