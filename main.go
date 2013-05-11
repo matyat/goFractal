@@ -38,8 +38,8 @@ func main() {
 	color_wheel.AddColor(color.RGBA{185, 160, 222, 255}, math.Pi)
 	color_wheel.AddColor(color.RGBA{248, 251, 218, 255}, math.Pi*4/3)
 	color_wheel.AddColor(color.RGBA{123, 96, 71, 255}, math.Pi*5/3)
-	
-	size := 8000 
+
+	size := 8000
 
 	viewport := fractal.Viewport{
 		Location: complex(0, 0),
@@ -50,8 +50,8 @@ func main() {
 	}
 
 	monitor := fractal.NewMonitor()
-	img := fractal.Render(viewport, fractal.Julia(complex(-0.8,0.156), 1600), color_wheel,
-		monitor, 4, threads)
+	img := fractal.Render(viewport, fractal.Julia(complex(-0.8, 0.156), 1600),
+		color_wheel, monitor, 4, threads)
 
 	// loop until the monitor says the render is complete
 	t := time.Now()

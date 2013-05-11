@@ -7,7 +7,7 @@ import (
 
 // internal type for ColorWheel to interpolate with, holds a colour and the it's angle
 // in the wheel
-type interpolColor struct {
+type ColorNode struct {
 	color color.Color
 	angle float64
 }
@@ -16,10 +16,10 @@ type interpolColor struct {
 // Set the InfColor to the color you want bounded regions (infinte
 // iterations) to be
 type ColorWheel struct {
-	cPalette       color.Palette
-	InfColor       color.Color
-	interpolColors []interpolColor
-	Radius         float64
+	cPalette   color.Palette
+	InfColor   color.Color
+	ColorNodes []ColorNode
+	Radius     float64
 }
 
 // Greates a new ColorWheel with the given radius, palette size and colour for
@@ -29,11 +29,6 @@ func NewColorWheel(radius float64, palette_size int) *ColorWheel {
 		cPalette: make([]color.Color, palette_size),
 		Radius:   radius,
 	}
-}
-
-// add a colour to the ColorWheel
-func (col_wheel *ColorWheel) AddColor(col color.Color, angle float64) {
-	col_wheel.interpolColors = append(col_wheel.interpolColors, interpolColor{col, angle})
 }
 
 // internal method of getting the pos of the internal palette at a given angle
@@ -46,16 +41,16 @@ func (col_wheel *ColorWheel) generate() {
 	const M = float64(1<<16 - 1)
 	palette_size := len(col_wheel.cPalette)
 	//for each colour to interpolate between
-	for i := range col_wheel.interpolColors {
-		col_A := col_wheel.interpolColors[i]
-		var col_B interpolColor
-		if i != len(col_wheel.interpolColors)-1 {
-			col_B = col_wheel.interpolColors[i+1]
+	for i := range col_wheel.ColorNodes {
+		col_A := col_wheel.ColorNodes[i]
+		var col_B ColorNode
+		if i != len(col_wheel.ColorNodes)-1 {
+			col_B = col_wheel.ColorNodes[i+1]
 		} else {
 			// if this is the last colour, we want
 			// to interpolate between this and the 
 			// first colour
-			col_B = col_wheel.interpolColors[0]
+			col_B = col_wheel.ColorNodes[0]
 			col_B.angle += 2 * math.Pi
 		}
 
