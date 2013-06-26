@@ -8,8 +8,8 @@ import (
 // internal type for ColorWheel to interpolate with, holds a colour and the it's angle
 // in the wheel
 type ColorNode struct {
-	color color.Color
-	angle float64
+	Color color.Color
+	Angle float64
 }
 
 // Special Palette for fractals, which loops back on it self
@@ -20,6 +20,12 @@ type ColorWheel struct {
 	InfColor   color.Color
 	ColorNodes []ColorNode
 	Radius     float64
+}
+
+//adds a new colour to the list of nodes TODO: Implement this stub
+func (col_wheel *ColorWheel) addColor(node ColorNode) {
+	//col_wheel.ColorNodes.
+	return
 }
 
 // Greates a new ColorWheel with the given radius, palette size and colour for
@@ -51,19 +57,19 @@ func (col_wheel *ColorWheel) generate() {
 			// to interpolate between this and the 
 			// first colour
 			col_B = col_wheel.ColorNodes[0]
-			col_B.angle += 2 * math.Pi
+			col_B.Angle += 2 * math.Pi
 		}
 
-		start_idx := int(math.Ceil(col_wheel.getPalettePosAt(col_A.angle)))
-		end_idx := int(math.Ceil(col_wheel.getPalettePosAt(col_B.angle)))
+		start_idx := int(math.Ceil(col_wheel.getPalettePosAt(col_A.Angle)))
+		end_idx := int(math.Ceil(col_wheel.getPalettePosAt(col_B.Angle)))
 
-		Ar, Ag, Ab, Aa := col_A.color.RGBA()
-		Br, Bg, Bb, Ba := col_B.color.RGBA()
+		Ar, Ag, Ab, Aa := col_A.Color.RGBA()
+		Br, Bg, Bb, Ba := col_B.Color.RGBA()
 
 		// begin interpolation
 		for n := start_idx; n != end_idx; n++ {
 			cur_angle := 2 * math.Pi * float64(n) / float64(palette_size)
-			m := (cur_angle - col_A.angle) / (col_B.angle - col_A.angle)
+			m := (cur_angle - col_A.Angle) / (col_B.Angle - col_A.Angle)
 			blend := func(a, b uint32) uint8 {
 				fa := float64(a) * (1 - m)
 				fb := float64(b) * m

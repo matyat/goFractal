@@ -32,15 +32,14 @@ func main() {
 
 	color_wheel := fractal.NewColorWheel(3, 255)
 	color_wheel.InfColor = color.RGBA{0, 0, 0, 255}
-	color_wheel.AddColor(color.RGBA{92, 4, 4, 255}, 0)
-	color_wheel.AddColor(color.RGBA{95, 53, 35, 255}, math.Pi*1/3)
-	color_wheel.AddColor(color.RGBA{138, 125, 192, 255}, math.Pi*2/3)
-	color_wheel.AddColor(color.RGBA{185, 160, 222, 255}, math.Pi)
-	color_wheel.AddColor(color.RGBA{248, 251, 218, 255}, math.Pi*4/3)
-	color_wheel.AddColor(color.RGBA{123, 96, 71, 255}, math.Pi*5/3)
 
-	size := 8000
+	red_node := fractal.ColorNode{color.RGBA{255, 0, 0 ,255}, 0}
+	green_node := fractal.ColorNode{color.RGBA{0, 255, 0 ,255}, math.Pi * 2/3}
+	blue_node := fractal.ColorNode{color.RGBA{0, 0, 255 ,255}, math.Pi * 4/3}
 
+	color_wheel.ColorNodes = []fractal.ColorNode{red_node, green_node, blue_node}
+
+	size := 1024
 	viewport := fractal.Viewport{
 		Location: complex(0, 0),
 		Scale:    1.5 / float64(size),
