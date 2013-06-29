@@ -27,7 +27,7 @@ func main() {
 		// threads finish early
 
 		// TODO: work out the optimal number of threads per CPU
-		threads = 4 * cpus
+		threads = cpus
 	}
 
 	color_wheel := fractal.NewColorWheel(3, 255)
@@ -39,7 +39,7 @@ func main() {
 
 	color_wheel.ColorNodes = []fractal.ColorNode{red_node, green_node, blue_node}
 
-	size := 1024
+	size := 256
 	viewport := fractal.Viewport{
 		Location: complex(0, 0),
 		Scale:    1.5 / float64(size),

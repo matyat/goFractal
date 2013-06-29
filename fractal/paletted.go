@@ -80,6 +80,7 @@ func (col_wheel *ColorWheel) generate() {
 	}
 }
 
+// Get the colour of a given number of normalised iterations
 func (col_wheel *ColorWheel) ColorAt(itr float64) color.Color {
 	// return the colour for infinity if infinity is given
 	if math.IsNaN(itr) || math.IsInf(itr, 0) {

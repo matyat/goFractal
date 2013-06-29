@@ -3,29 +3,8 @@ package fractal
 import (
 	"image"
 	"image/color"
+	"sync/atomic"
 )
-
-// Split an image into a number of virtal strips
-func splitImage(img *image.RGBA, n int) []image.Image {
-	strips := make([]image.Image, n)
-	bounds := img.Bounds()
-	h_step := int(float64(bounds.Dx()) / float64(n))
-
-	// image width divided by n will not always be an integer
-	// so we may have to add/remove a few columns from the last
-	// strip 
-	offset := bounds.Dx() - n*h_step
-
-	for i := 0; i < n; i++ {
-		x0 := bounds.Min.X + i*h_step
-		x1 := bounds.Min.X + (i+1)*h_step
-		if i == n-1 { // if last strip
-			x1 += offset
-		}
-		strips[i] = img.SubImage(image.Rect(x0, bounds.Min.Y, x1, bounds.Max.Y))
-	}
-	return strips
-}
 
 type Monitor struct {
 	Channels []chan bool
@@ -51,48 +30,61 @@ func NewMonitor() *Monitor {
 
 func Render(view Viewport, gen Generator, color_wheel *ColorWheel,
 	monitor *Monitor, multisample, threads int) *image.RGBA {
-	
+
 	color_wheel.generate()
 
-	output_img := image.NewRGBA(
-		image.Rect(0, 0, view.Width, view.Height))
+	output_img := image.NewRGBA(image.Rect(0, 0, view.Width, view.Height))
 
 	monitor.Channels = make([]chan bool, threads)
 	monitor.MaxPix = view.Width * view.Height
-	sub_images := splitImage(output_img, threads)
+
+	// an array of values to make sure each pixel is only rendered once
+	pixel_once := make([]int64, monitor.MaxPix)
 
 	for i := range monitor.Channels {
-		monitor.Channels[i] = make(chan bool, 1024)
+		// buffering these channels stops them from being blocked when reporting their
+		// progress
+		monitor.Channels[i] = make(chan bool, 64)
 		m := float64(multisample)
-		go func(img *image.RGBA, channel chan bool) {
-			for x := img.Rect.Min.X; x < img.Rect.Max.X; x++ {
-				for y := img.Rect.Min.Y; y < img.Rect.Max.Y; y++ {
+		go func(channel chan bool, id int) {
+			for y := output_img.Rect.Min.Y; y < output_img.Rect.Max.Y; y++ {
+				stride := y*view.Width
+				for x := output_img.Rect.Min.X; x < output_img.Rect.Max.X; x++ {
+					// if pixel_once is assigned any other than 0, the pixel has
+					// already been processed
+					if(atomic.CompareAndSwapInt64(
+						&pixel_once[x + stride], 0, int64(id))){
+							var R, G, B uint8
 
-					// sample for each sub-pixel
-					var R, G, B uint
-					for sx := 0; sx < multisample; sx++ {
-						for sy := 0; sy < multisample; sy++ {
-							x0 := float64(x)+float64(sx) / m
-							y0 := float64(y)+float64(sy) / m
-							itr := gen.EscapeAt(view.ComplexAt(x0, y0))
-							r, g, b, _ := color_wheel.ColorAt(itr).RGBA()
-							R += uint(uint8(r))
-							G += uint(uint8(g))
-							B += uint(uint8(b))
+							//sample sub-pixels when multisampling
+							for sx := 0; sx < multisample; sx++ {
+								for sy := 0; sy < multisample; sy++ {
+									x0 := float64(x)+float64(sx) / m
+									y0 := float64(y)+float64(sy) / m
+
+									itr := gen.EscapeAt(view.ComplexAt(x0, y0))
+									r, g, b, _ := color_wheel.ColorAt(itr).RGBA()
+
+									R += uint8(r)
+									G += uint8(g)
+									B += uint8(b)
+								}
+							}
+
+							// Average each colour
+							m_sqr := uint8(multisample * multisample)
+							R /= m_sqr
+							G /= m_sqr
+							B /= m_sqr
+
+							output_img.Set(x, y, color.RGBA{R, G, B, 255})
+							channel <- true
 						}
-					}
-
-					R /= uint(multisample * multisample)
-					G /= uint(multisample * multisample)
-					B /= uint(multisample * multisample)
-
-					img.Set(x, y, color.RGBA{uint8(R), uint8(G), uint8(B), 255})
-					channel <- true
 				}
 			}
 			close(channel)
-		}(sub_images[i].(*image.RGBA), monitor.Channels[i])
+		}(monitor.Channels[i], i+1)
 	}
 
-	return output_img
+	return output_img 
 }
