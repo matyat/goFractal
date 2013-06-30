@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"goFractal/fractal"
 	"image/color"
@@ -13,10 +14,12 @@ import (
 )
 
 func main() {
-	// get the number of CPUs, and set the go runtime to utilise them
-	cpus := runtime.NumCPU()
-	runtime.GOMAXPROCS(cpus)
-	threads := cpus
+	img_filename := flag.String("output", "image.png", "Output image filename.")
+	cpus := flag.Int("cpus", runtime.NumCPU(), "Number of CPUs to untilise.")
+	threads := flag.Int("threads", runtime.NumCPU(), "Number of rendering threads.")
+	flag.Parse()
+
+	runtime.GOMAXPROCS(*cpus)
 
 	color_wheel := fractal.NewColorWheel(3, 255)
 	color_wheel.InfColor = color.RGBA{0, 0, 0, 255}
@@ -37,10 +40,10 @@ func main() {
 	}
 
 	renderer := fractal.Renderer{
-		Viewport: viewport,
-		Generator: fractal.Julia(complex(-0.8, 0.156), 1600),
-		ColorWheel: color_wheel,
-		Threads: threads,
+		Viewport:      viewport,
+		Generator:     fractal.Mandelbrot(256),
+		ColorWheel:    color_wheel,
+		Threads:       *threads,
 		Multisampling: 4,
 	}
 
@@ -54,8 +57,8 @@ func main() {
 
 	img := renderer.GetImage()
 
-	fmt.Print("\rFinished rendering in ", time.Since(t), " on ", cpus, " CPUs with ", threads, " threads\n")
+	fmt.Print("\rFinished rendering in ", time.Since(t), " on ", *cpus, " CPUs with ", *threads, " threads\n")
 
-	imgFile, _ := os.Create("image.png")
+	imgFile, _ := os.Create(*img_filename)
 	png.Encode(imgFile, img)
 }
