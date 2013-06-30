@@ -16,26 +16,14 @@ func main() {
 	// get the number of CPUs, and set the go runtime to utilise them
 	cpus := runtime.NumCPU()
 	runtime.GOMAXPROCS(cpus)
-
-	var threads int
-	if cpus == 1 {
-		// no point in multithreading on a single-core
-		threads = 1
-	} else {
-		// the number of threads should be higher than the number of CPUs
-		// so the load across all the CPUs remains fairly constant if a few
-		// threads finish early
-
-		// TODO: work out the optimal number of threads per CPU
-		threads = cpus
-	}
+	threads := cpus
 
 	color_wheel := fractal.NewColorWheel(3, 255)
 	color_wheel.InfColor = color.RGBA{0, 0, 0, 255}
 
-	red_node := fractal.ColorNode{color.RGBA{255, 0, 0 ,255}, 0}
-	green_node := fractal.ColorNode{color.RGBA{0, 255, 0 ,255}, math.Pi * 2/3}
-	blue_node := fractal.ColorNode{color.RGBA{0, 0, 255 ,255}, math.Pi * 4/3}
+	red_node := fractal.ColorNode{color.RGBA{255, 0, 0, 255}, 0}
+	green_node := fractal.ColorNode{color.RGBA{0, 255, 0, 255}, math.Pi * 2 / 3}
+	blue_node := fractal.ColorNode{color.RGBA{0, 0, 255, 255}, math.Pi * 4 / 3}
 
 	color_wheel.ColorNodes = []fractal.ColorNode{red_node, green_node, blue_node}
 

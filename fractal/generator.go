@@ -5,6 +5,9 @@ import (
 	"math/cmplx"
 )
 
+// Function generator for factals, stores the fractal function,
+// the iteration normalisation function, and the bailout and max
+// iterations params.
 type Generator struct {
 	Bailout                float64
 	MaxIterations          int
@@ -12,16 +15,16 @@ type Generator struct {
 	IterationNormalisation func(float64, complex128) float64
 }
 
-// Gets the number of iterations until escape for a complex value Z
+// Gets the number of iterations until escape for a complex value Z.
 func (gen Generator) EscapeAt(C complex128) float64 {
 	function_instance := gen.Function(C)
 	var Z complex128
 	var col float64
 	var itr int
 
-	// loop until the Z becomes unbounded
-	// if the number of iteratation hits the MaxIterations var
-	// we assume Z is bounded and return +infinity
+	// Loop until the Z becomes unbounded.
+	// If the number of iteratation hits the MaxIterations var
+	// we assume Z is bounded and return +infinity.
 	for ; cmplx.Abs(Z) < gen.Bailout; itr++ {
 		if itr == gen.MaxIterations {
 			return math.Inf(1)

@@ -4,6 +4,7 @@ import (
 	"math"
 )
 
+// Struct to define the area rendered
 type Viewport struct {
 	Location        complex128
 	Scale, Rotation float64
@@ -21,9 +22,9 @@ func (view Viewport) ComplexAt(X, Y float64) complex128 {
 	y *= view.Scale
 
 	// rotate
-	x0, y0 := x, y
-	x = x0*math.Cos(view.Rotation) - y0*math.Sin(view.Rotation)
-	y = x0*math.Sin(view.Rotation) + y0*math.Cos(view.Rotation)
+	cos_rt := math.Cos(view.Rotation)
+	sin_rt := math.Sin(view.Rotation)
+	x, y = (x*cos_rt - y*sin_rt), (x*sin_rt + y*cos_rt)
 
 	// move
 	x += real(view.Location)
