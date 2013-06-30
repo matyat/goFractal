@@ -36,24 +36,23 @@ func main() {
 		Height:   size,
 	}
 
-	monitor := fractal.NewMonitor()
-	img := fractal.Render(viewport, fractal.Julia(complex(-0.8, 0.156), 1600),
-		color_wheel, monitor, 4, threads)
-
-	// loop until the monitor says the render is complete
-	t := time.Now()
-	var last_prog_str string
-	for {
-		if prog, done := monitor.Progress(); done {
-			break
-		} else {
-			prog_str := strconv.FormatFloat(100*prog, 'f', 1, 64)
-			if prog_str != last_prog_str {
-				fmt.Print("\r", prog_str, "%")
-			}
-			last_prog_str = prog_str
-		}
+	renderer := fractal.Renderer{
+		Viewport: viewport,
+		Generator: fractal.Julia(complex(-0.8, 0.156), 1600),
+		ColorWheel: color_wheel,
+		Threads: threads,
+		Multisampling: 4,
 	}
+
+	renderer.Render()
+
+	t := time.Now()
+	for renderer.Rendering() {
+		prog_str := strconv.FormatFloat(100*renderer.Progress(), 'f', 1, 64)
+		fmt.Print("\r", prog_str, "%")
+	}
+
+	img := renderer.GetImage()
 
 	fmt.Print("\rFinished rendering in ", time.Since(t), " on ", cpus, " CPUs with ", threads, " threads\n")
 
