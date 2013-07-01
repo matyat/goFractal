@@ -7,35 +7,34 @@ import (
 )
 
 type Renderer struct {
-	Viewport         Viewport
+	ViewPort         ViewPort
 	Generator        Generator
-	ColorWheel       *ColorWheel
-	Threads          int
+	ColorWheel       ColorWheel
 	Multisampling    int
 	img              *image.RGBA
 	processed_pixels uint64
 	total_pixels     uint64
 }
 
-func (ren *Renderer) Render() {
+func (ren *Renderer) Render(threads int) {
 	ren.ColorWheel.generate()
 
-	ren.img = image.NewRGBA(image.Rect(0, 0, ren.Viewport.Width, ren.Viewport.Height))
+	ren.img = image.NewRGBA(image.Rect(0, 0, ren.ViewPort.Width, ren.ViewPort.Height))
 
 	ren.processed_pixels = 0
-	ren.total_pixels = uint64(ren.Viewport.Width * ren.Viewport.Height)
+	ren.total_pixels = uint64(ren.ViewPort.Width * ren.ViewPort.Height)
 
 	// an array of values to make sure each pixel is only rendered once
 	pixel_lock := make([]int64, ren.total_pixels)
 
-	for t := 1; t < ren.Threads + 1; t++ {
+	for t := 1; t < threads + 1; t++ {
 		m := float64(ren.Multisampling)
 		m_sqr := uint64(ren.Multisampling * ren.Multisampling)
 
 		go func(id int) {
-			for y := 0; y < ren.Viewport.Height; y++ {
-				stride := y * ren.Viewport.Width
-				for x := 0; x < ren.Viewport.Width; x++ {
+			for y := 0; y < ren.ViewPort.Height; y++ {
+				stride := y * ren.ViewPort.Width
+				for x := 0; x < ren.ViewPort.Width; x++ {
 					// if pixel_lock is assigned any other than 0, the pixel has
 					// already been processed
 					if atomic.CompareAndSwapInt64(
@@ -48,7 +47,7 @@ func (ren *Renderer) Render() {
 								x0 := float64(x) + float64(sx)/m
 								y0 := float64(y) + float64(sy)/m
 
-								itr := ren.Generator.EscapeAt(ren.Viewport.ComplexAt(x0, y0))
+								itr := ren.Generator.EscapeAt(ren.ViewPort.ComplexAt(x0, y0))
 								r, g, b, _ := ren.ColorWheel.ColorAt(itr).RGBA()
 
 								R += uint64(r >> 8)

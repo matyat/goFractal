@@ -1,0 +1,11 @@
+<Fractal Type="Mandelbrot" Bailout="4.0" MaxIterations="255">
+
+	<ViewPort Location="-0.75 + 0i" Scale="800" Rotation="0" Width="2560" Height="1920" Multisampling="4" />
+
+	<ColorWheel Res="255" Radius="3">
+		<Color Red="255" Green="128" Blue="0"   Alpha="255" Angle="0" />
+		<Color Red="0"   Green="128" Blue="255" Alpha="255" Angle="120" />
+		<Color Red="240" Green="70"  Blue="70"  Alpha="255" Angle="240" />
+	</ColorWheel>
+
+</Fractal>

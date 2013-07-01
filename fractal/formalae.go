@@ -8,9 +8,9 @@ import(
 //Example fractal
 
 //Mandelbrot Set
-func Mandelbrot(max_iterations int) Generator {
+func Mandelbrot(bailout float64, max_iterations int) Generator {
 	return Generator{
-		Bailout:       4,
+		Bailout:       bailout,
 		MaxIterations: max_iterations,
 		Function: func(c complex128) func() (complex128, float64) {
 			C := c
@@ -27,9 +27,9 @@ func Mandelbrot(max_iterations int) Generator {
 }
 
 //Julia set where f(z) = z^2 + c
-func Julia(c complex128, max_iterations int) Generator {
+func Julia(c complex128, bailout float64, max_iterations int) Generator {
 	return Generator{
-		Bailout:       2,
+		Bailout:       bailout,
 		MaxIterations: max_iterations,
 		Function: func(z complex128) func() (complex128, float64) {
 			Z := z
@@ -48,9 +48,9 @@ func Julia(c complex128, max_iterations int) Generator {
 }
 
 // Newton fractal, where P is a function of z and Pd(z) = P'(z)
-func Newton(P, Pd func(complex128) complex128, max_iterations int) Generator {
+func Newton(P, Pd func(complex128) complex128, bailout float64, max_iterations int) Generator {
 	return Generator{
-		Bailout:       1e14,
+		Bailout:       bailout,
 		MaxIterations: max_iterations,
 		Function: func(z complex128) func() (complex128, float64) {
 			Z := z

@@ -1,53 +1,43 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"goFractal/fractal"
-	"image/color"
 	"image/png"
-	"math"
+	"launchpad.net/gnuflag"
 	"os"
 	"runtime"
 	"strconv"
 	"time"
 )
 
+var img_filename *string= gnuflag.String(
+	"output", "", "Output image filename.",
+)
+var cpus *int = gnuflag.Int(
+	"cpus", runtime.NumCPU(), "Number of CPUs to untilise.",
+)
+var threads *int = gnuflag.Int(
+	"threads", runtime.NumCPU(), "Number of rendering threads.",
+)
+
 func main() {
-	img_filename := flag.String("output", "image.png", "Output image filename.")
-	cpus := flag.Int("cpus", runtime.NumCPU(), "Number of CPUs to untilise.")
-	threads := flag.Int("threads", runtime.NumCPU(), "Number of rendering threads.")
-	flag.Parse()
+	gnuflag.Parse(true)
+	xml_filename := gnuflag.Arg(0)
+
+	if *img_filename == "" {
+		//strip off the .xml and replace with .png
+		*img_filename = xml_filename[:len(xml_filename)-3] + "png"
+	}
 
 	runtime.GOMAXPROCS(*cpus)
 
-	color_wheel := fractal.NewColorWheel(3, 255)
-	color_wheel.InfColor = color.RGBA{0, 0, 0, 255}
-
-	red_node := fractal.ColorNode{color.RGBA{255, 0, 0, 255}, 0}
-	green_node := fractal.ColorNode{color.RGBA{0, 255, 0, 255}, math.Pi * 2 / 3}
-	blue_node := fractal.ColorNode{color.RGBA{0, 0, 255, 255}, math.Pi * 4 / 3}
-
-	color_wheel.ColorNodes = []fractal.ColorNode{red_node, green_node, blue_node}
-
-	size := 256
-	viewport := fractal.Viewport{
-		Location: complex(0, 0),
-		Scale:    1.5 / float64(size),
-		Rotation: -25 * math.Pi / 180,
-		Width:    2 * size,
-		Height:   size,
+	renderer, err := fractal.ParseXml(xml_filename)
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	renderer := fractal.Renderer{
-		Viewport:      viewport,
-		Generator:     fractal.Mandelbrot(256),
-		ColorWheel:    color_wheel,
-		Threads:       *threads,
-		Multisampling: 4,
-	}
-
-	renderer.Render()
+	renderer.Render(*threads)
 
 	t := time.Now()
 	for renderer.Rendering() {

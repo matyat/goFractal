@@ -17,22 +17,17 @@ type ColorNode struct {
 // iterations) to be
 type ColorWheel struct {
 	cPalette   color.Palette
-	InfColor   color.Color
-	ColorNodes []ColorNode
-	Radius     float64
+	PaletteSize int
+	InfColor    color.Color
+	ColorNodes  []ColorNode
+	Radius      float64
 }
 
-//adds a new colour to the list of nodes TODO: Implement this stub
-func (col_wheel *ColorWheel) addColor(node ColorNode) {
-	//col_wheel.ColorNodes.
-	return
-}
-
-// Greates a new ColorWheel with the given radius, palette size and colour for
+// Creates a new ColorWheel with the given radius, palette size and colour for
 // infinty
 func NewColorWheel(radius float64, palette_size int) *ColorWheel {
 	return &ColorWheel{
-		cPalette: make([]color.Color, palette_size),
+		PaletteSize: palette_size,
 		Radius:   radius,
 	}
 }
@@ -44,6 +39,8 @@ func (col_wheel *ColorWheel) getPalettePosAt(angle float64) float64 {
 }
 
 func (col_wheel *ColorWheel) generate() {
+	col_wheel.cPalette = make([]color.Color, col_wheel.PaletteSize)
+
 	const M = float64(1<<16 - 1)
 	palette_size := len(col_wheel.cPalette)
 	//for each colour to interpolate between
@@ -85,6 +82,10 @@ func (col_wheel *ColorWheel) ColorAt(itr float64) color.Color {
 	// return the colour for infinity if infinity is given
 	if math.IsNaN(itr) || math.IsInf(itr, 0) {
 		return col_wheel.InfColor
+	}
+
+	if itr < 0 {
+		itr = 0
 	}
 
 	angle := itr / col_wheel.Radius

@@ -5,21 +5,21 @@ import (
 )
 
 // Struct to define the area rendered
-type Viewport struct {
+type ViewPort struct {
 	Location        complex128
 	Scale, Rotation float64
 	Width, Height   int
 }
 
 // translate a pixel co-ord to a complex number
-func (view Viewport) ComplexAt(X, Y float64) complex128 {
+func (view ViewPort) ComplexAt(X, Y float64) complex128 {
 	//move origin to centre
 	x := X - float64(view.Width)/2
 	y := Y - float64(view.Height)/2
 
 	// scale
-	x *= view.Scale
-	y *= view.Scale
+	x /= view.Scale
+	y /= view.Scale
 
 	// rotate
 	cos_rt := math.Cos(view.Rotation)
