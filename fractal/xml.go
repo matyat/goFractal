@@ -132,7 +132,7 @@ func ParseXml(filename string) (Renderer, error) {
 	renderer.ViewPort = ViewPort{
 		Location: viewport_loc,
 		Scale:    intr.ViewPort.Scale,
-		Rotation: intr.ViewPort.Rotation,
+		Rotation: degToRad(intr.ViewPort.Rotation),
 		Width:    intr.ViewPort.Width,
 		Height:   intr.ViewPort.Height,
 	}
