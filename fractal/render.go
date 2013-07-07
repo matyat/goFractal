@@ -31,6 +31,7 @@ func (ren *Renderer) Render(threads int) {
 		m := float64(ren.Multisampling)
 		m_sqr := uint64(ren.Multisampling * ren.Multisampling)
 
+		// create a thread
 		go func(id int) {
 			for y := 0; y < ren.ViewPort.Height; y++ {
 				stride := y * ren.ViewPort.Width

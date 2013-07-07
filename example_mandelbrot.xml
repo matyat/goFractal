@@ -1,11 +1,22 @@
 <Fractal Type="Mandelbrot" Bailout="4.0" MaxIterations="255">
+	<!-- ViewPort defines hows the position and size of fractal render.                              -->
+	<!-- Location:      The complex value of the centre pixel.                                       -->
+	<!-- Scale:         The scale of the image.                                                      -->
+	<!-- Rotation:      Rotation of the image around the centre pixel.                               -->
+	<!-- Width, Height: Size of the image in pixels.                                                 -->
+	<!-- Multisampling: Number of samples per pixels, reduces aliasing                               -->
+	<ViewPort Location="-0.75 + 0i" Scale="80" Rotation="0" Width="256" Height="192" Multisampling="4"/>
 
-	<ViewPort Location="-0.75 + 0i" Scale="800" Rotation="0" Width="2560" Height="1920" Multisampling="4" />
-
+	<!-- A ColorWheel difines how a fractal is coloured. As the number of iterations increases,      -->
+	<!-- the colour selector moves around the wheel a colours the pixel it lands on.                 -->
+	<!-- ColorWheel must have at least 2 Color members. Color are interpolated linearly through      -->
+	<!-- RGB space to fill the entire wheel.                                                         -->
+	<!-- Res:    Gradularity of the interpoltion, higher values allow more colours.                  -->
+	<!-- Radius: The radius of the wheel, lower values make the colours cycle quickly, while         -->
+	<!--         higher values make more gradual changes in colour.                                  -->
 	<ColorWheel Res="255" Radius="3">
-		<Color Red="255" Green="128" Blue="0"   Alpha="255" Angle="0" />
-		<Color Red="0"   Green="128" Blue="255" Alpha="255" Angle="120" />
-		<Color Red="240" Green="70"  Blue="70"  Alpha="255" Angle="240" />
+		<Color Red="255" Green="128" Blue="0"   Angle="0" />
+		<Color Red="0"   Green="128" Blue="255" Angle="120" />
+		<Color Red="240" Green="70"  Blue="70"  Angle="240" />
 	</ColorWheel>
-
 </Fractal>
