@@ -1,13 +1,14 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"goFractal/fractal"
+	"image"
 	"image/jpeg"
 	"image/png"
 	"launchpad.net/gnuflag"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -31,38 +32,63 @@ var imgQuality *int = gnuflag.Int(
 )
 
 func main() {
+	runtime.GOMAXPROCS(*cpus)
+
 	gnuflag.Usage = func() {
 		fmt.Print(usage)
 		gnuflag.PrintDefaults()
 	}
 
 	gnuflag.Parse(true)
-	xmlFileName := gnuflag.Arg(0)
+	configFileName := gnuflag.Arg(0)
+	configFormat := filepath.Ext(configFileName)
 
-	if xmlFileName == "" || !strings.HasSuffix(xmlFileName, ".xml") {
-		fmt.Println("Sorry, only .xml input files are valid")
-		gnuflag.Usage()
+	var parse func(string) (fractal.Renderer, error)
+	switch configFormat{
+	case ".xml":
+		parse = fractal.ParseXml
+	default:
+		fmt.Println("Sorry %v input is not supported.\n", configFormat)
 		return
 	}
 
-	if *imgFileName == "" {
-		// strip off the .xml and replace with .png and use that as an output 
-		// if an output file is not specified
-		*imgFileName = xmlFileName[:strings.LastIndex(*imgFileName, ".")] + "png"
-	}
-
-	imgFormat := (*imgFileName)[strings.LastIndex(*imgFileName, ".") + 1:]
-
-	runtime.GOMAXPROCS(*cpus)
-
-	renderer, renderErr := fractal.ParseXml(xmlFileName)
+	renderer, renderErr := parse(configFileName)
 	if renderErr != nil {
 		fmt.Println(renderErr)
 		return
 	}
 
-	if !(imgFormat == "png" || imgFormat == "jpg" || imgFormat == "jpeg"){
-		fmt.Println("Sorry, image format", imgFormat, "is not supported")
+	if *imgFileName == "" {
+		// Strip off the config extension and replace with .png and use
+		// that as an output if an output file is not specified.
+		*imgFileName = configFileName[:strings.LastIndex(configFileName, ".")] + "png"
+	}
+	imgFormat := filepath.Ext(*imgFileName)
+
+	imgFile, fileErr := os.Create(*imgFileName)
+	if fileErr != nil {
+		fmt.Println(fileErr)
+		return
+	}
+
+	// set up the encode before we start rendering so we can
+	// bail out if there are any errors
+	var img image.Image
+	var encode func() error
+	switch imgFormat {
+	case ".png":
+		encode = func() error {
+			return png.Encode(imgFile, img)
+		}
+	case ".jpg", ".jpeg":
+		encode = func() error {
+			opts := jpeg.Options{
+				Quality: *imgQuality,
+			}
+			return jpeg.Encode(imgFile, img, &opts)
+		}
+	default:
+		fmt.Printf("Sorry, image format %v is not supported.\n", imgFormat)
 		return
 	}
 
@@ -75,30 +101,11 @@ func main() {
 		progStr := strconv.FormatFloat(100*renderer.Progress(), 'f', 1, 64)
 		fmt.Print("\r", progStr, "%")
 	}
-
-	img := renderer.GetImage()
+	img = renderer.GetImage()
 
 	fmt.Print("\rFinished rendering in ", time.Since(t), " on ", *cpus, " CPUs with ", *threads, " threads\n")
 
-	imgFile, fileErr := os.Create(*imgFileName)
-	if fileErr != nil {
-		fmt.Println(fileErr)
-		return
-	}
-
-	var encodingErr error
-	switch imgFormat {
-	case "png":
-		encodingErr = png.Encode(imgFile, img)
-	case "jpg", "jpeg":
-		opts := jpeg.Options{
-			Quality: *imgQuality,
-		}
-		encodingErr = jpeg.Encode(imgFile, img, &opts)
-	default:
-		encodingErr = errors.New("Image format not supported: " + imgFormat)
-	}
-
+	encodingErr := encode()
 	if encodingErr != nil {
 		fmt.Println(encodingErr)
 		return

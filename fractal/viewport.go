@@ -6,29 +6,40 @@ import (
 
 // Struct to define the area rendered
 type ViewPort struct {
-	Location        complex128
-	Scale, Rotation float64
-	Width, Height   int
+	Location       complex128
+	LocationStr    string  `xml:"Location,attr"`
+	Scale          float64 `xml:",attr"`
+	Rotation       float64 `xml:",attr"`
+	Width,Height          int     `xml:",attr"`
+	Multisampling  int     `xml:",attr"`
+	cosRot, sinRot float64
+	initialised    bool
 }
 
 // translate a pixel co-ord to a complex number
-func (view ViewPort) ComplexAt(X, Y float64) complex128 {
+func (vp ViewPort) ComplexAt(x, y float64) complex128 {
+	// only need to run once
+	if !vp.initialised {
+		vp.cosRot = math.Cos(vp.Rotation)
+		vp.sinRot = math.Sin(vp.Rotation)
+		vp.Location, _ = parseCmplxString(vp.LocationStr)
+		vp.initialised = true
+	}
+
 	//move origin to centre
-	x := X - float64(view.Width)/2
-	y := Y - float64(view.Height)/2
+	x -= float64(vp.Width) / 2
+	y -= float64(vp.Height) / 2
 
 	// scale
-	x /= view.Scale
-	y /= view.Scale
+	x /= vp.Scale
+	y /= vp.Scale
 
 	// rotate
-	cos_rt := math.Cos(view.Rotation)
-	sin_rt := math.Sin(view.Rotation)
-	x, y = (x*cos_rt - y*sin_rt), (x*sin_rt + y*cos_rt)
+	x, y = (x*vp.cosRot - y*vp.sinRot), (x*vp.sinRot + y*vp.cosRot)
 
 	// move
-	x += real(view.Location)
-	y += imag(view.Location)
+	x += real(vp.Location)
+	y += imag(vp.Location)
 
 	return complex(x, y)
 }

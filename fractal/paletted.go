@@ -16,7 +16,7 @@ type ColorNode struct {
 // Set the InfColor to the color you want bounded regions (infinte
 // iterations) to be
 type ColorWheel struct {
-	cPalette   color.Palette
+	cPalette    color.Palette
 	PaletteSize int
 	InfColor    color.Color
 	ColorNodes  []ColorNode
@@ -25,76 +25,77 @@ type ColorWheel struct {
 
 // Creates a new ColorWheel with the given radius, palette size and colour for
 // infinty
-func NewColorWheel(radius float64, palette_size int) *ColorWheel {
+func NewColorWheel(radius float64, paletteSize int) *ColorWheel {
 	return &ColorWheel{
-		PaletteSize: palette_size,
-		Radius:   radius,
+		PaletteSize: paletteSize,
+		Radius:      radius,
 	}
 }
 
 // internal method of getting the pos of the internal palette at a given angle
-func (col_wheel *ColorWheel) getPalettePosAt(angle float64) float64 {
-	p := 2 * math.Pi / float64(len(col_wheel.cPalette))
+func (colWheel *ColorWheel) getPalettePosAt(angle float64) float64 {
+	p := 2 * math.Pi / float64(len(colWheel.cPalette))
 	return angle / p
 }
 
-func (col_wheel *ColorWheel) generate() {
-	col_wheel.cPalette = make([]color.Color, col_wheel.PaletteSize)
+func (colWheel *ColorWheel) generate() {
+	colWheel.cPalette = make([]color.Color, colWheel.PaletteSize)
 
 	const M = float64(1<<16 - 1)
-	palette_size := len(col_wheel.cPalette)
+	paletteSize := len(colWheel.cPalette)
 	//for each colour to interpolate between
-	for i := range col_wheel.ColorNodes {
-		col_A := col_wheel.ColorNodes[i]
-		var col_B ColorNode
-		if i != len(col_wheel.ColorNodes)-1 {
-			col_B = col_wheel.ColorNodes[i+1]
+	for i := range colWheel.ColorNodes {
+		colA := colWheel.ColorNodes[i]
+		var colB ColorNode
+
+		if i != len(colWheel.ColorNodes)-1 {
+			colB = colWheel.ColorNodes[i+1]
 		} else {
 			// if this is the last colour, we want
-			// to interpolate between this and the 
+			// to interpolate between this and the
 			// first colour
-			col_B = col_wheel.ColorNodes[0]
-			col_B.Angle += 2 * math.Pi
+			colB = colWheel.ColorNodes[0]
+			colB.Angle += 2 * math.Pi
 		}
 
-		start_idx := int(math.Ceil(col_wheel.getPalettePosAt(col_A.Angle)))
-		end_idx := int(math.Ceil(col_wheel.getPalettePosAt(col_B.Angle)))
+		startIdx := int(math.Ceil(colWheel.getPalettePosAt(colA.Angle)))
+		endIdx := int(math.Ceil(colWheel.getPalettePosAt(colB.Angle)))
 
-		Ar, Ag, Ab, Aa := col_A.Color.RGBA()
-		Br, Bg, Bb, Ba := col_B.Color.RGBA()
+		Ar, Ag, Ab, Aa := colA.Color.RGBA()
+		Br, Bg, Bb, Ba := colB.Color.RGBA()
 
 		// begin interpolation
-		for n := start_idx; n != end_idx; n++ {
-			cur_angle := 2 * math.Pi * float64(n) / float64(palette_size)
-			m := (cur_angle - col_A.Angle) / (col_B.Angle - col_A.Angle)
+		for n := startIdx; n != endIdx; n++ {
+			curAngle := 2 * math.Pi * float64(n) / float64(paletteSize)
+			m := (curAngle - colA.Angle) / (colB.Angle - colA.Angle)
 			blend := func(a, b uint32) uint8 {
 				fa := float64(a) * (1 - m)
 				fb := float64(b) * m
 				return uint8(255 * (fa + fb) / M)
 			}
-			col_wheel.cPalette[n%palette_size] = color.RGBA{blend(Ar, Br), blend(Ag, Bg), blend(Ab, Bb), blend(Aa, Ba)}
+			colWheel.cPalette[n%paletteSize] = color.RGBA{blend(Ar, Br), blend(Ag, Bg), blend(Ab, Bb), blend(Aa, Ba)}
 		}
 	}
 }
 
 // Get the colour of a given number of normalised iterations
-func (col_wheel *ColorWheel) ColorAt(itr float64) color.Color {
+func (colWheel *ColorWheel) ColorAt(itr float64) color.Color {
 	// return the colour for infinity if infinity is given
 	if math.IsNaN(itr) || math.IsInf(itr, 0) {
-		return col_wheel.InfColor
+		return colWheel.InfColor
 	}
 
 	if itr < 0 {
 		itr = 0
 	}
 
-	angle := itr / col_wheel.Radius
+	angle := itr / colWheel.Radius
 	_, f := math.Modf(angle / (2 * math.Pi))
 	angle = f * 2 * math.Pi
 
-	idx := int(math.Floor(col_wheel.getPalettePosAt(angle) + 0.5))
-	if idx == len(col_wheel.cPalette) {
+	idx := int(math.Floor(colWheel.getPalettePosAt(angle) + 0.5))
+	if idx == len(colWheel.cPalette) {
 		idx = 0
 	}
-	return col_wheel.cPalette[idx]
+	return colWheel.cPalette[idx]
 }
